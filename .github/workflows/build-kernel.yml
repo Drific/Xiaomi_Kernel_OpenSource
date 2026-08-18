@@ -1,0 +1,47 @@
+name: Build Xiaomi 10 Kernel
+
+on:
+  push:
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout kernel source
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1  # 浅克隆，省时间
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y git make gcc g++ bc bison flex libssl-dev \
+          libelf-dev gcc-aarch64-linux-gnu crossbuild-essential-arm64
+
+    - name: Download Proton-Clang toolchain
+      run: |
+        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git toolchain
+
+    - name: Configure kernel (enable namespaces + iSCSI)
+      run: |
+        # 假设你的 defconfig 叫 umi_defconfig，请根据实际修改
+        make ARCH=arm64 SUBARCH=arm64 O=out CROSS_COMPILE=aarch64-linux-gnu- \
+          CC=$PWD/toolchain/bin/clang AR=$PWD/toolchain/bin/llvm-ar \
+          NM=$PWD/toolchain/bin/llvm-nm OBJCOPY=$PWD/toolchain/bin/llvm-objcopy \
+          OBJDUMP=$PWD/toolchain/bin/llvm-objdump STRIP=$PWD/toolchain/bin/llvm-strip \
+          umi_user_defconfig
+ 
+    - name: Build kernel Image
+      run: |
+        make ARCH=arm64 SUBARCH=arm64 O=out CROSS_COMPILE=aarch64-linux-gnu- \
+          CC=$PWD/toolchain/bin/clang AR=$PWD/toolchain/bin/llvm-ar \
+          NM=$PWD/toolchain/bin/llvm-nm OBJCOPY=$PWD/toolchain/bin/llvm-objcopy \
+          OBJDUMP=$PWD/toolchain/bin/llvm-objdump STRIP=$PWD/toolchain/bin/llvm-strip \
+          -j$(nproc)
+
+    - name: Upload kernel image
+      uses: actions/upload-artifact@v4
+      with:
+        name: boot-image
+        path: out/arch/arm64/boot/Image
