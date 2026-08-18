@@ -30,7 +30,7 @@ jobs:
           CC=$PWD/toolchain/bin/clang AR=$PWD/toolchain/bin/llvm-ar \
           NM=$PWD/toolchain/bin/llvm-nm OBJCOPY=$PWD/toolchain/bin/llvm-objcopy \
           OBJDUMP=$PWD/toolchain/bin/llvm-objdump STRIP=$PWD/toolchain/bin/llvm-strip \
-          umi_user_defconfig
+          vendor/umi_user_defconfig
  
     - name: Build kernel Image
       run: |
